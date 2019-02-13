@@ -1,26 +1,32 @@
+import TransparentProxy from "./lib/TransparetProxy.js";
+import ProxySafeWeakMap from "./lib/ProxySafeWeakMap";
+import ProxySafeMap from "./lib/ProxySafeMap";
+
 /**
  * ProxySafe is a decorator function designed to allow a class instance to be
  * safely wrapped in a Proxy without fear of issues from (Weak)Map/Set usage.
  * @param {Object} desc - the class decorator descriptor. 
  */
 export default function ProxySafe(desc) {
+    let retval = Object.assign({}, desc);
+
     function safeWrap(fn) {
         let retval = function(...args) {
             let prevWeakMap = WeakMap;
-            let prevWeakSet = WeakSet;
             let prevMap = Map;
-            let prevSet = Set;
             let prevProxy = Proxy;
             let retval;
+
+            WeakMap = ProxySafeWeakMap;
+            Map = ProxySafeMap;
+            Proxy = TransparentProxy;
 
             try {
                 retval = fn.call(this, ...args);
             }
             finally {
                 Proxy = prevProxy;
-                Set = prevSet;
                 Map = prevMap;
-                WeakSet = prevWeakSet;
                 WeakMap = prevWeakMap;
             }
 
@@ -40,7 +46,11 @@ export default function ProxySafe(desc) {
         return retval;
     }
 
-    for (let element of desc.elements) {
-        
+    for (let element of retval.elements) {
+        let value = element.initializer();
+        if (typeof(value) == "function")
+            element.initializer = safeWrap(value);
     }
-}
+
+    return retval;
+};
