@@ -1,6 +1,16 @@
 import ProxySafe from "../proxy-safe";
 import SafeProto from "../safe-proto";
-import { PrivateMembers, Private, Protected } from "../private-members";
+import { PrivateMembers, Private, Protected, Inherited } from "../private-members";
+
+
+/**
+ * Testing SafeProto
+ */
+@PrototypeProperties
+@SafeProto
+class
+
+
 
 @ProxySafe
 @SafeProto
@@ -11,8 +21,8 @@ class Test {
     pubField = Math.PI;
     
     privateCheck() {
-        console.log(`pvtField = ${this.#pvtField}`);
-        console.log(`protField = ${this.#protField}`);
+        console.log(`pvtField = ${this.pvtField}`);
+        console.log(`protField = ${this.protField}`);
         console.log(`pubField = ${this.pubField}`);
     }
 };
@@ -26,9 +36,12 @@ class SubTest extends Test {
     pubField2 = Math.E;
 
     privateCheck() {
-        console.log(`pvtField = ${this.#pvtField}`);
-        console.log(`protField = ${this.#protField}`);
+        console.log(`pvtField = ${this.pvtField}`);
+        console.log(`protField = ${this.protField}`);
         console.log(`pubField = ${this.pubField}`);
         console.log(`pubField2 = ${this.pubField2}`);
     }
 }
+
+let test = new SubTest;
+test.privateCheck();

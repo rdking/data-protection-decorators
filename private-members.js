@@ -21,55 +21,32 @@ export const PrivateMembers = (function () {
                 elements: [],
                 finisher: (cls) => {
                     let inCtor = false;
-                    /**
-                     * This handler is only used during the construction of the
-                     * class instance. It's purpose is to cache all data changes
-                     * that occur within the instance during the constructor. These
-                     * changes are then played back on the instance after Proxy
-                     * wrapping so as to make it as though the instance was always
-                     * proxied. This, of course, fails for (Weak)Map/Set usage.
-                     */
                     let handler = {
-                        ctorRun: {
-                            defs: {},
-                            data: {},
-                            deleted: []
-                        },
-                        defineProperty(target, prop, desc) {
-                            let retval = true;
-                            if (inCtor) {
-                                ctorRun.defs[prop] = desc;
-                                data[prop] = desc.value;
-                            }
-                            else {
-                                retval = Reflect.defineProperty(target, prop, desc);
-                            }
+                        data: {},
+                        deleted: [],
+                        get(target, prop, receiver) {
+                            let retval = this.data[prop];
+                            if (prop in target)
+                                retval = Reflect.get(target, prop, receiver);
                             return retval;
                         },
-                        deleteProperty(target, prop) {
-
-                        },
-                        get(target, prop, receiver) {
-
-                        },
-                        getOwnPropertyDescriptor(target, prop) {
-
-                        },
                         has(target, prop) {
-
-                        },
-                        ownKeys(target) {
-
+                            return Reflect.has(target, prop) || (prop in this.data);
                         },
                         set(target, prop, value, receiver) {
-
+                            let retval = true;
+                            if (prop in target)
+                                retval = Reflect.set(target, prop, value, receiver);
+                            else
+                                this.data[prop] = value;
+                            return retval;
                         }
                     };
 
                     return new Proxy(cls, {
                         construct(target, args, newTarget) {
                             let pNewTarget = function() {};
-                            Object.defineProperties(retval, {
+                            Object.defineProperties(pNewTarget, {
                                 name: {
                                     configurable: true,
                                     value: newTarget.name
@@ -91,18 +68,29 @@ export const PrivateMembers = (function () {
                     });
                 }
             };
+            
             let topc = {};
             let ptopc = (Base) ? prot.get(Base) : {};
+            Object.assign(topc, ptopc);
+
             target.elements.forEach(e => {
                 if (e.descriptor.private) {
+                    /**
+                     * Currently, as of v7.3.0 of class members and decorators,
+                     * there's no support for using decorators with private
+                     * fields. So we can work around this by cheating, and 
+                     * letting a decorator create the actual private field. In
+                     * this way, we can turn a private name into a private
+                     * Symbol.
+                     */
                     let element = Object.assign({}, e);
                     let pkey = PrivateName(e.key);
 
                     if (e.descriptor.shared) {
+                        debugger;
                         topc[e.key] = pkey;
                         element.key = pkey;
                     }
-                    pvtData[v = e.initializer;
                 }
                 else {
                     retval.elements.push(e);

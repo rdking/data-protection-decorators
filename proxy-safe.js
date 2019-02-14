@@ -1,4 +1,4 @@
-import TransparentProxy from "./lib/TransparetProxy.js";
+import TransparentProxy from "./lib/TransparentProxy.js";
 import ProxySafeWeakMap from "./lib/ProxySafeWeakMap";
 import ProxySafeMap from "./lib/ProxySafeMap";
 
@@ -47,8 +47,7 @@ export default function ProxySafe(desc) {
     }
 
     for (let element of retval.elements) {
-        let value = element.initializer();
-        if (typeof(value) == "function")
+        if ("method" in element)
             element.initializer = safeWrap(value);
     }
 
