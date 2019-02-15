@@ -1,16 +1,29 @@
 import ProxySafe from "../proxy-safe";
 import SafeProto from "../safe-proto";
+import PrototypeFields from "../prototype-fields"
 import { PrivateMembers, Private, Protected, Inherited } from "../private-members";
 
 
 /**
  * Testing SafeProto
  */
-@PrototypeProperties
+@PrototypeFields
 @SafeProto
-class
-
-
+class SafeProtoTest {
+    testField = {foo: "bar"};
+    print() {
+        debugger;
+        console.log(`instance has testField: ${"testField" in instance}`);
+        console.log(`testField = ${JSON.stringify(testField)}`);
+        this.testField.fubar = 42;
+        console.log(`instance has testField: ${"testField" in instance}`);
+        console.log(`testField = ${JSON.stringify(testField)}`);
+        delete this.testField;
+        console.log(`instance has testField: ${"testField" in instance}`);
+        console.log(`testField = ${JSON.stringify(testField)}`);
+    }
+};
+new SafeProtoTest().print();
 
 @ProxySafe
 @SafeProto
