@@ -60,9 +60,24 @@ export const PrivateMembers = (function () {
                                 }
                             });
                             inCtor = true;
+                            let oldTHI = target[Symbol.hasInstance];
+                            Object.defineProperty(target, Symbol.hasInstance, {
+                                configurable: true,
+                                value: (inst) => {
+                                    let iProto = Object.getPrototypeOf(inst);
+                                    return ([target.prototype, newTarget.prototype, pNewTarget.prototype].includes(iProto));
+                                }
+                            });
                             let retval = Reflect.construct(target, args, pNewTarget);
+                            delete target[Symbol.hasInstance]
+                            if (oldTHI) {
+                                Object.defineProperty(target, Symbol.hasInstance, {
+                                    configurable: true,
+                                    value: oldTHI
+                                });
+                            }
                             inCtor = false;
-                            Object.setPrototypeOf(rval, newTarget.prototype);
+                            //Object.setPrototypeOf(retval, newTarget.prototype);
                             return new Proxy(retval, handler);
                         }
                     });
@@ -87,7 +102,6 @@ export const PrivateMembers = (function () {
                     let pkey = PrivateName(e.key);
 
                     if (e.descriptor.shared) {
-                        debugger;
                         topc[e.key] = pkey;
                         element.key = pkey;
                     }

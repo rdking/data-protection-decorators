@@ -20,10 +20,12 @@ export default function SafeProto(desc) {
 		function getHandler(root, parent, field, inst) {
 			return {
 				get(target, prop, receiver) {
+                  	if (parent == null)
+                      parent = { value: receiver };
 					let retval = Reflect.get(target, prop, receiver);
 					if (isCustomObject(retval)) {
-						let newParent = (target === root) ? parent : receiver;
-						retval = new Proxy(retval, getHandler(root, newParent, prop, inst || receiver));
+						let newParent = (target === root) ? parent.value : receiver;
+						retval = new Proxy(retval, getHandler(root, { value: newParent }, prop, inst || receiver));
 					}
 					return retval;
 				},
@@ -38,10 +40,13 @@ export default function SafeProto(desc) {
 					newTarget[prop] = value;
 
 					if (root === target) {
-						retval = Reflect.set(receiver, field, newTarget, receiver);
+                        let proto = Object.getPrototypeOf(receiver);
+                        Object.setPrototypeOf(receiver, null);
+						receiver[prop] = value;
+                        Object.setPrototypeOf(receiver, proto);
 					}
 					else {
-						parent[field] = newTarget;
+						parent.value[field] = newTarget;
 					}
 
 					return retval;
@@ -53,9 +58,7 @@ export default function SafeProto(desc) {
 			construct(target, args, newTarget) {
 				let pNewTarget = function() {};
 				let proto = newTarget.prototype;
-				let pseudoHandler = {};
-				let proxy = new Proxy(proto, pseudoHandler);
-				Object.assign(pseudoHandler, getHandler(proto, proxy));
+				let proxy = new Proxy(proto, getHandler(proto, null));
 
 				Object.defineProperties(pNewTarget, {
 					name: {
@@ -70,7 +73,23 @@ export default function SafeProto(desc) {
 						value: proxy
 					}
 				});
-				return Reflect.construct(target, args, pNewTarget);
+				let oldTHI = target[Symbol.hasInstance];
+				Object.defineProperty(target, Symbol.hasInstance, {
+					configurable: true,
+					value: (inst) => {
+						let iProto = Object.getPrototypeOf(inst);
+						return ([target.prototype, newTarget.prototype, pNewTarget.prototype].includes(iProto));
+					}
+				});
+				let retval = Reflect.construct(target, args, pNewTarget);
+				delete target[Symbol.hasInstance]
+				if (oldTHI) {
+					Object.defineProperty(target, Symbol.hasInstance, {
+						configurable: true,
+						value: oldTHI
+					});
+				}
+				return retval;
 			}
 		});
 
